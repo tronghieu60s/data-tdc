@@ -1,0 +1,25 @@
+{
+  "name": "data-tdc",
+  "version": "1.0.0",
+  "description": "Trình thu thập dữ liệu sinh viên TDC - Trường Cao Đẳng Công Nghệ Thủ Đức.",
+  "main": "index.js",
+  "scripts": {
+    "start": "SET NODE_ENV=production && node index.js",
+    "dev": "SET NODE_ENV=development && node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tronghieu60s/data-tdc.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tronghieu60s/data-tdc/issues"
+  },
+  "homepage": "https://github.com/tronghieu60s/data-tdc#readme",
+  "dependencies": {
+    "objects-to-csv": "^1.3.6",
+    "puppeteer": "^12.0.1"
+  }
+}
