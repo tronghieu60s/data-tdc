@@ -59,6 +59,14 @@ function randomIntFromInterval(min, max) {
 }
 exports.randomIntFromInterval = randomIntFromInterval;
 
+function capitalizeFirstLetter(s) {
+  return s
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+exports.capitalizeFirstLetter = capitalizeFirstLetter;
+
 function writeDataToJson(data, filePath = "./data.json") {
   let fileData = [];
   try {
