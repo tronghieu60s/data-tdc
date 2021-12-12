@@ -39,12 +39,17 @@ const codeFaculty = [
 ];
 
 let isDialog = false;
+let isHaveData = false;
 let studentData = "";
 let accountStatus = "";
+let maxNoAccess = codeFaculty.length * 10;
+let countNotAccess = 0;
 
 const main = async (browser) => {
   const page = await browser.newPage();
   await page.setViewport({ width: 1366, height: 768 });
+
+  console.log("Start.");
 
   page.on("dialog", async (dialog) => {
     isDialog = true;
@@ -60,7 +65,12 @@ const main = async (browser) => {
     fs.unlinkSync(csvFilePath);
   }
 
-  for (let i = 3; i < 6000; i += 1) {
+  for (let i = 1; i < 6000; i += 1) {
+
+    if(countNotAccess > maxNoAccess) {
+      break;
+    }
+
     studentData = {};
     await page.goto(Elements.crawlerUrl);
 
@@ -71,6 +81,12 @@ const main = async (browser) => {
 
     for (let j = 0; j < codeFaculty.length; j += 1) {
       isDialog = false;
+
+      if (isHaveData) {
+        await page.goto(Elements.crawlerUrl);
+        await crawlerLogin(page);
+      }
+      isHaveData = false;
 
       // generate student code
       const codeStudent = `${codeCourse}211${codeFaculty[j]}${rearStudentId}`;
@@ -92,11 +108,13 @@ const main = async (browser) => {
             capitalizeFirstLetter(accountStatus)
           );
           writeDataToCsv(studentData, csvFilePath);
-          break;
+        } else {
+          countNotAccess += 1;
         }
         continue;
       }
 
+      isHaveData = true;
       console.log(codeStudent);
 
       // get info student
@@ -106,9 +124,10 @@ const main = async (browser) => {
 
       // write data to csv
       writeDataToCsv(studentData, csvFilePath);
-      break;
     }
   }
+
+  console.log("Finish.");
 };
 
 const crawlerLogin = async (page) => {
