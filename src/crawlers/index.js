@@ -60,11 +60,6 @@ const main = async (browser) => {
     await dialog.dismiss();
   });
 
-  // delete file if exists
-  if (fs.existsSync(csvFilePath)) {
-    fs.unlinkSync(csvFilePath);
-  }
-
   for (let i = 1; i < 6000; i += 1) {
 
     if(countNotAccess > maxNoAccess) {
@@ -93,11 +88,15 @@ const main = async (browser) => {
 
       await crawlerLoginInput(page, codeStudent);
       // wait for dialog set value
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
 
       // if dialog check status user
       if (isDialog) {
-        if (accountStatus !== Fields.studentStatus1) {
+        if (accountStatus === Fields.studentStatus1) {
+          countNotAccess += 1;
+        } else {
+          isHaveData = true;
+          countNotAccess = 0;
           console.log(codeStudent);
           await crawlerLoginInput(page, "19211QT0001");
           let infoAccount = await crawlerInfoAccount(page, codeStudent);
@@ -108,13 +107,12 @@ const main = async (browser) => {
             capitalizeFirstLetter(accountStatus)
           );
           writeDataToCsv(studentData, csvFilePath);
-        } else {
-          countNotAccess += 1;
         }
         continue;
       }
 
       isHaveData = true;
+      countNotAccess = 0;
       console.log(codeStudent);
 
       // get info student
@@ -227,7 +225,7 @@ const crawlerDataGenerate = (
   studentData[Fields.FieldName5] = infoData?.scoreOne;
   studentData[Fields.FieldName6] = infoData?.scoreTwo;
   studentData[Fields.FieldName7] = infoData?.scoreThree;
-  studentData[Fields.FieldName8] = infoData?.scoreFour;
+  studentData[Fields.FieldName8] = capitalizeFirstLetter(infoData?.scoreFour || '');
   studentData[Fields.FieldName9] = infoStatus;
 };
 
