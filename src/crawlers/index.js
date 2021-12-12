@@ -12,7 +12,7 @@ const Fields = _interopRequireWildcard(require("../helpers/crawlersFunctions"));
 
 const codeCourse = "19";
 const rearInfoAccount = "&NH=2020-2021&HK=HK02";
-const csvFilePath = `./K${codeCourse}-TDC.csv`;
+const csvFilePath = `./data/K${codeCourse}-TDC.csv`;
 const codeFaculty = [
   "CD",
   "CK",
