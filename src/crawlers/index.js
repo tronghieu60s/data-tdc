@@ -2,13 +2,16 @@ const fs = require("fs");
 const {
   _interopRequireWildcard,
   writeDataToCsv,
+  capitalizeFirstLetter,
 } = require("../helpers/commonFunctions");
 
 const Elements = _interopRequireWildcard(
   require("../helpers/crawlersElements")
 );
 const Fields = _interopRequireWildcard(require("../helpers/crawlersFunctions"));
+
 const codeCourse = "19";
+const rearInfoAccount = "&NH=2020-2021&HK=HK02";
 const csvFilePath = `./K${codeCourse}-TDC.csv`;
 const codeFaculty = [
   "CD",
@@ -35,102 +38,110 @@ const codeFaculty = [
   "TT",
 ];
 
+let isDialog = false;
+let studentData = "";
+let accountStatus = "";
+
 const main = async (browser) => {
   const page = await browser.newPage();
   await page.setViewport({ width: 1366, height: 768 });
-  await page.goto(Elements.crawlerUrl);
 
   page.on("dialog", async (dialog) => {
-    console.log(dialog.message());
+    isDialog = true;
+    const dialogMessage = dialog.message().replace(/\n/g, "");
+    // console.log(dialogMessage);
+
+    crawlerStatusAccount(dialogMessage);
     await dialog.dismiss();
   });
 
+  // delete file if exists
   if (fs.existsSync(csvFilePath)) {
     fs.unlinkSync(csvFilePath);
   }
 
-  for (let i = 1; i < 6000; i += 1) {
+  for (let i = 3; i < 6000; i += 1) {
+    studentData = {};
+    await page.goto(Elements.crawlerUrl);
+
+    const rearStudentId = ("0000" + i).slice(-4);
+    console.log(rearStudentId);
+
+    await crawlerLogin(page);
+
     for (let j = 0; j < codeFaculty.length; j += 1) {
-      let studentData = {};
+      isDialog = false;
 
-      const codeStudent = `${codeCourse}211${codeFaculty[j]}${i}`;
-      await crawlerLogin(page, codeStudent);
+      // generate student code
+      const codeStudent = `${codeCourse}211${codeFaculty[j]}${rearStudentId}`;
+
+      await crawlerLoginInput(page, codeStudent);
+      // wait for dialog set value
+      await page.waitForTimeout(500);
+
+      // if dialog check status user
+      if (isDialog) {
+        if (accountStatus !== Fields.studentStatus1) {
+          console.log(codeStudent);
+          await crawlerLoginInput(page, "19211QT0001");
+          let infoAccount = await crawlerInfoAccount(page, codeStudent);
+          crawlerDataGenerate(
+            codeStudent,
+            null,
+            infoAccount,
+            capitalizeFirstLetter(accountStatus)
+          );
+          writeDataToCsv(studentData, csvFilePath);
+          break;
+        }
+        continue;
+      }
+
+      console.log(codeStudent);
+
+      // get info student
       let infoData = await crawlerInfoData(page);
+      let infoAccount = await crawlerInfoAccount(page, codeStudent);
+      crawlerDataGenerate(codeStudent, infoData, infoAccount);
 
-      const params = {
-        Studentid: codeStudent,
-        NH: infoData.ddlNamHoc,
-        HK: infoData.ddlHocKy,
-      };
-      const queryString = Object.keys(params)
-        .map((key) => `${key}=${params[key]}`)
-        .join("&");
-
-      let infoAccount = await crawlerInfoAccount(page, queryString);
-
-      studentData[Fields.FieldName1] = codeStudent;
-      studentData[Fields.FieldName2] = infoAccount.studentName;
-      studentData[Fields.FieldName3] = infoAccount.studentClass;
-      studentData[Fields.FieldName4] = infoAccount.studentPhone;
-      studentData[Fields.FieldName5] = infoData.scoreOne;
-      studentData[Fields.FieldName6] = infoData.scoreTwo;
-      studentData[Fields.FieldName7] = infoData.scoreThree;
-      studentData[Fields.FieldName8] = infoData.scoreFour;
-
-      writeDataToCsv(infoAccount, csvFilePath);
+      // write data to csv
+      writeDataToCsv(studentData, csvFilePath);
+      break;
     }
   }
-
-  // let accStatus = "";
-  // if (alertLogin.indexOf(studentStatus2) > -1) {
-  //   accStatus = capitalizeFirstLetter(studentStatus2);
-  // } else if (alertLogin.indexOf(studentStatus3) > -1) {
-  //   accStatus = capitalizeFirstLetter(studentStatus3);
-  // }
-
-  // let infoAccount = {};
-  // infoAccount[Fields.FieldName1] = "19211TT1201";
-  // if (alertLogin.length === 0) {
-  //   accStatus = capitalizeFirstLetter(studentStatus4);
-  // } else {
-  //   infoAccount = await crawlerInfoData(page);
-  //   infoAccount = await crawlerInfoAccount(page, infoAccount);
-  // }
-  // infoAccount = { ...infoAccount, [Fields.FieldName9]: accStatus };
-  // writeDataToCsv(infoAccount, csvFilePath);
 };
 
-const crawlerLogin = async (page, codeStudent) => {
-  /* move to login */
+const crawlerLogin = async (page) => {
+  /* logout if user logged */
+  await page.waitForSelector(Elements.btnLogin);
+  await page.click(Elements.btnLogin);
+
+  /* login to parents mode */
   await page.waitForSelector(Elements.btnLogin);
   await page.click(Elements.btnLogin);
   await page.waitForSelector(Elements.radParents);
   await page.click(Elements.radParents);
+};
 
-  /* login input */
+const crawlerLoginInput = async (page, codeStudent) => {
+  /* login input with student code */
   await page.waitForSelector(Elements.txtUsername);
+  await page.evaluate(
+    (txt) => (document.querySelector(txt).value = ""),
+    [Elements.txtUsername]
+  );
   await page.type(Elements.txtUsername, codeStudent);
   await page.waitForSelector(Elements.txtPassword);
+  await page.evaluate(
+    (txt) => (document.querySelector(txt).value = ""),
+    [Elements.txtPassword]
+  );
   await page.type(Elements.txtPassword, "0000");
   await page.waitForSelector(Elements.btnLoginSubmit);
   await page.click(Elements.btnLoginSubmit);
 };
 
 const crawlerInfoData = async (page) => {
-  /* screenshot account tuition */
-  await page.waitForSelector(Elements.lnkAccount);
-  await page.click(Elements.lnkAccount);
-
-  const ddlHocKy = await (
-    await page.waitForSelector(Elements.ddlHocKy)
-  ).evaluate((el) => el.textContent);
-
-  const ddlNamHoc = await (
-    await page.waitForSelector(Elements.ddlNamHoc)
-  ).evaluate((el) => el.textContent);
-
-  // await screenshotElement(page, Elements.tableZero, "19211TT1201-tuition");
-
   /* screenshot score */
   await page.waitForSelector(Elements.lnkDiem);
   await page.click(Elements.lnkDiem);
@@ -145,26 +156,13 @@ const crawlerInfoData = async (page) => {
   const scoreThree = parseFloat(allScoreArr[3].trim());
   const scoreFour = allScoreArr[4].trim();
 
-  // /* screenshot score all */
-  // await page.waitForSelector(Elements.rdbTatca);
-  // await page.click(Elements.rdbTatca);
-  // await screenshotElement(page, Elements.tableOne, "19211TT1201-score-all");
-
-  // /* screenshot score aml */
-  // await page.waitForSelector(Elements.rdbTichluy);
-  // await page.click(Elements.rdbTichluy);
-  // await screenshotElement(page, Elements.tableOne, "19211TT1201-score-aml");
-
-  // /* screenshot score dtl */
-  // await page.waitForSelector(Elements.rdbChitiet);
-  // await page.click(Elements.rdbChitiet);
-  // await screenshotElement(page, Elements.tableOne, "19211TT1201-score-dtl");
-
-  return { ddlHocKy, ddlNamHoc, scoreOne, scoreTwo, scoreThree, scoreFour };
+  return { scoreOne, scoreTwo, scoreThree, scoreFour };
 };
 
-const crawlerInfoAccount = async (page, queryString) => {
-  await page.goto(`${Elements.crawlerUrlExamination}${queryString}`);
+const crawlerInfoAccount = async (page, codeStudent) => {
+  await page.goto(
+    `${Elements.crawlerUrlExamination}?Studentid=${codeStudent}${rearInfoAccount}`
+  );
 
   /* Student Name */
   let studentName = await (
@@ -185,6 +183,33 @@ const crawlerInfoAccount = async (page, queryString) => {
   studentPhone = studentPhone.trim();
 
   return { studentName, studentClass, studentPhone };
+};
+
+const crawlerStatusAccount = async (message) => {
+  if (message.indexOf(Fields.studentStatus1) > -1) {
+    accountStatus = Fields.studentStatus1;
+  } else if (message.indexOf(Fields.studentStatus2) > -1) {
+    accountStatus = Fields.studentStatus2;
+  } else if (message.indexOf(Fields.studentStatus3) > -1) {
+    accountStatus = Fields.studentStatus3;
+  }
+};
+
+const crawlerDataGenerate = (
+  codeStudent,
+  infoData,
+  infoAccount,
+  infoStatus = Fields.studentStatus4
+) => {
+  studentData[Fields.FieldName1] = codeStudent;
+  studentData[Fields.FieldName2] = infoAccount?.studentName;
+  studentData[Fields.FieldName3] = infoAccount?.studentClass;
+  studentData[Fields.FieldName4] = infoAccount?.studentPhone;
+  studentData[Fields.FieldName5] = infoData?.scoreOne;
+  studentData[Fields.FieldName6] = infoData?.scoreTwo;
+  studentData[Fields.FieldName7] = infoData?.scoreThree;
+  studentData[Fields.FieldName8] = infoData?.scoreFour;
+  studentData[Fields.FieldName9] = infoStatus;
 };
 
 module.exports = main;
