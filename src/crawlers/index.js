@@ -1,4 +1,5 @@
 const fs = require("fs");
+const csv = require("csv-parser");
 const {
   _interopRequireWildcard,
   writeDataToCsv,
@@ -10,9 +11,13 @@ const Elements = _interopRequireWildcard(
 );
 const Fields = _interopRequireWildcard(require("../helpers/crawlersFunctions"));
 
+const results = [];
 const codeCourse = "19";
 const rearInfoAccount = "&NH=2020-2021&HK=HK02";
-const csvFilePath = `./data/K${codeCourse}-TDC.csv`;
+const csvFilePath = `./data/K${codeCourse}-Result.csv`;
+const csvFilePathError = `./data/K${codeCourse}-Error.csv`;
+const csvFilePathFilter = `./data/K${codeCourse}-Filter.csv`;
+const csvFilePathFilterResult = `./data/K${codeCourse}-FilterResult.csv`;
 const codeFaculty = [
   "CD",
   "CK",
@@ -49,6 +54,18 @@ const main = async (browser) => {
   const page = await browser.newPage();
   await page.setViewport({ width: 1366, height: 768 });
 
+  page.on("dialog", async (dialog) => {
+    isDialog = true;
+    const dialogMessage = dialog.message().replace(/\n/g, "");
+    // console.log(dialogMessage);
+
+    crawlerStatusAccount(dialogMessage);
+    await dialog.dismiss();
+  });
+
+  await mainFilter(page);
+  return;
+
   console.log("Start.");
 
   page.on("dialog", async (dialog) => {
@@ -61,8 +78,7 @@ const main = async (browser) => {
   });
 
   for (let i = 1; i < 6000; i += 1) {
-
-    if(countNotAccess > maxNoAccess) {
+    if (countNotAccess > maxNoAccess) {
       break;
     }
 
@@ -86,46 +102,132 @@ const main = async (browser) => {
       // generate student code
       const codeStudent = `${codeCourse}211${codeFaculty[j]}${rearStudentId}`;
 
-      await crawlerLoginInput(page, codeStudent);
-      // wait for dialog set value
-      await page.waitForTimeout(1000);
+      try {
+        await crawlerLoginInput(page, codeStudent);
+        // wait for dialog set value
+        await page.waitForTimeout(500);
 
-      // if dialog check status user
-      if (isDialog) {
-        if (accountStatus === Fields.studentStatus1) {
-          countNotAccess += 1;
-        } else {
-          isHaveData = true;
-          countNotAccess = 0;
-          console.log(codeStudent);
-          await crawlerLoginInput(page, "19211QT0001");
-          let infoAccount = await crawlerInfoAccount(page, codeStudent);
-          crawlerDataGenerate(
-            codeStudent,
-            null,
-            infoAccount,
-            capitalizeFirstLetter(accountStatus)
-          );
-          writeDataToCsv(studentData, csvFilePath);
+        // if dialog check status user
+        if (isDialog) {
+          if (accountStatus === Fields.studentStatus1) {
+            countNotAccess += 1;
+          } else {
+            isHaveData = true;
+            countNotAccess = 0;
+            console.log(codeStudent);
+            await crawlerLoginInput(page, "19211QT0001");
+            let infoAccount = await crawlerInfoAccount(page, codeStudent);
+            crawlerDataGenerate(
+              codeStudent,
+              null,
+              infoAccount,
+              capitalizeFirstLetter(accountStatus)
+            );
+            writeDataToCsv(studentData, csvFilePath);
+            break;
+          }
+          continue;
         }
+
+        isHaveData = true;
+        countNotAccess = 0;
+        console.log(codeStudent);
+
+        // get info student
+        let infoData = await crawlerInfoData(page);
+        let infoAccount = await crawlerInfoAccount(page, codeStudent);
+        crawlerDataGenerate(codeStudent, infoData, infoAccount);
+
+        // write data to csv
+        writeDataToCsv(studentData, csvFilePath);
+        break;
+      } catch (error) {
+        console.log(`${codeStudent} - Error!`);
+        writeDataToCsv({ [Fields.FieldName1]: codeStudent }, csvFilePathError);
         continue;
       }
-
-      isHaveData = true;
-      countNotAccess = 0;
-      console.log(codeStudent);
-
-      // get info student
-      let infoData = await crawlerInfoData(page);
-      let infoAccount = await crawlerInfoAccount(page, codeStudent);
-      crawlerDataGenerate(codeStudent, infoData, infoAccount);
-
-      // write data to csv
-      writeDataToCsv(studentData, csvFilePath);
     }
   }
 
   console.log("Finish.");
+};
+
+const mainFilter = async (page) => {
+  fs.createReadStream(csvFilePathFilter)
+    .pipe(csv())
+    .on("data", (data) => results.push(data))
+    .on("end", async () => {
+      for (let i = 1; i < results.length; i += 1) {
+        studentData = {};
+        await page.goto(Elements.crawlerUrl);
+
+        const rearStudentId = ("0000" + results[i]["MSSV"]).slice(-4);
+        console.log(rearStudentId);
+
+        await crawlerLogin(page);
+
+        for (let j = 0; j < codeFaculty.length; j += 1) {
+          isDialog = false;
+
+          if (isHaveData) {
+            await page.goto(Elements.crawlerUrl);
+            await crawlerLogin(page);
+          }
+          isHaveData = false;
+
+          // generate student code
+          const codeStudent = `${codeCourse}211${codeFaculty[j]}${rearStudentId}`;
+
+          try {
+            await crawlerLoginInput(page, codeStudent);
+            // wait for dialog set value
+            await page.waitForTimeout(500);
+
+            // if dialog check status user
+            if (isDialog) {
+              if (accountStatus === Fields.studentStatus1) {
+                countNotAccess += 1;
+              } else {
+                isHaveData = true;
+                countNotAccess = 0;
+                console.log(codeStudent);
+                await crawlerLoginInput(page, "19211QT0001");
+                let infoAccount = await crawlerInfoAccount(page, codeStudent);
+                crawlerDataGenerate(
+                  codeStudent,
+                  null,
+                  infoAccount,
+                  capitalizeFirstLetter(accountStatus)
+                );
+                writeDataToCsv(studentData, csvFilePath);
+                break;
+              }
+              continue;
+            }
+
+            isHaveData = true;
+            countNotAccess = 0;
+            console.log(codeStudent);
+
+            // get info student
+            let infoData = await crawlerInfoData(page);
+            let infoAccount = await crawlerInfoAccount(page, codeStudent);
+            crawlerDataGenerate(codeStudent, infoData, infoAccount);
+
+            // write data to csv
+            writeDataToCsv(studentData, csvFilePathFilterResult);
+            break;
+          } catch (error) {
+            console.log(`${codeStudent} - Error!`);
+            writeDataToCsv(
+              { [Fields.FieldName1]: codeStudent },
+              csvFilePathFilterResult
+            );
+            continue;
+          }
+        }
+      }
+    });
 };
 
 const crawlerLogin = async (page) => {
@@ -225,7 +327,9 @@ const crawlerDataGenerate = (
   studentData[Fields.FieldName5] = infoData?.scoreOne;
   studentData[Fields.FieldName6] = infoData?.scoreTwo;
   studentData[Fields.FieldName7] = infoData?.scoreThree;
-  studentData[Fields.FieldName8] = capitalizeFirstLetter(infoData?.scoreFour || '');
+  studentData[Fields.FieldName8] = capitalizeFirstLetter(
+    infoData?.scoreFour || ""
+  );
   studentData[Fields.FieldName9] = infoStatus;
 };
 
