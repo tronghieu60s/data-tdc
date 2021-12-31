@@ -1,9 +1,5 @@
 # Trình Thu Thập Dữ Liệu Sinh Viên Trường Cao Đẳng Công Nghệ Thủ Đức
 
-![version](https://img.shields.io/github/package-json/v/tronghieu60s/data-tdc)
-![code-size](https://img.shields.io/github/languages/code-size/tronghieu60s/data-tdc)
-![license](https://img.shields.io/github/license/tronghieu60s/data-tdc)
-
 Đây là trình thu thập dữ liệu sinh viên trường Cao Đẳng Công Nghệ Thủ Đức được thu thập từ trang http://online.tdc.edu.vn/.
 
 ## Yêu Cầu
