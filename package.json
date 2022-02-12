@@ -1,10 +1,9 @@
 {
   "name": "data-tdc",
   "version": "1.0.0",
-  "description": "Trình thu thập dữ liệu sinh viên TDC - Trường Cao Đẳng Công Nghệ Thủ Đức.",
+  "description": "Trình thu thập dữ liệu sinh viên Trường Cao Đẳng Công Nghệ Thủ Đức.",
   "main": "index.js",
   "scripts": {
-    "filter": "node filter.js",
     "dev": "SET NODE_ENV=development && node index.js",
     "start": "SET NODE_ENV=production && node index.js"
   },

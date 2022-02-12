@@ -12,7 +12,10 @@ function _getRequireWildcardCache(nodeInterop) {
   })(nodeInterop);
 }
 
-function _interopRequireWildcard(obj, nodeInterop) {
+exports._interopRequireWildcard = function _interopRequireWildcard(
+  obj,
+  nodeInterop
+) {
   if (!nodeInterop && obj && obj.__esModule) {
     return obj;
   }
@@ -43,31 +46,23 @@ function _interopRequireWildcard(obj, nodeInterop) {
     cache.set(obj, newObj);
   }
   return newObj;
-}
-exports._interopRequireWildcard = _interopRequireWildcard;
+};
 
 /* Others Functions */
 
-function isObjectEmpty(obj) {
+exports.isObjectEmpty = function isObjectEmpty(obj) {
   return Object.keys(obj).length === 0;
-}
-exports.isObjectEmpty = isObjectEmpty;
+};
 
-function randomIntFromInterval(min, max) {
+exports.randomIntFromInterval = function randomIntFromInterval(min, max) {
   // min and max included
   return Math.floor(Math.random() * (max - min + 1) + min);
-}
-exports.randomIntFromInterval = randomIntFromInterval;
+};
 
-function capitalizeFirstLetter(s) {
-  return s
-    .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-exports.capitalizeFirstLetter = capitalizeFirstLetter;
-
-function writeDataToJson(data, filePath = "./data.json") {
+exports.writeDataToJson = function writeDataToJson(
+  data,
+  filePath = "./data.json"
+) {
   let fileData = [];
   try {
     fileData = JSON.parse(fs.readFileSync(filePath));
@@ -80,10 +75,12 @@ function writeDataToJson(data, filePath = "./data.json") {
   }
 
   fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2));
-}
-exports.writeDataToJson = writeDataToJson;
+};
 
-function writeDataToCsv(data, filePath = "./data.csv") {
+exports.writeDataToCsv = function writeDataToCsv(
+  data,
+  filePath = "./data.csv"
+) {
   let csv = new ObjectsToCsv([]);
   if (Array.isArray(data)) {
     csv = new ObjectsToCsv([...data]);
@@ -91,5 +88,4 @@ function writeDataToCsv(data, filePath = "./data.csv") {
     csv = new ObjectsToCsv([data]);
   }
   return csv.toDisk(filePath, { append: true });
-}
-exports.writeDataToCsv = writeDataToCsv;
+};
