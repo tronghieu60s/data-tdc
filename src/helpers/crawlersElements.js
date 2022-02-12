@@ -3,6 +3,31 @@ exports.crawlerUrl = crawlerUrl;
 const crawlerUrlExamination =
   "http://online.tdc.edu.vn/ExaminationSchedule.aspx";
 exports.crawlerUrlExamination = crawlerUrlExamination;
+const crawlerCodeFaculty = [
+  "CD",
+  "CK",
+  "CT",
+  "DC",
+  "DD",
+  "DH",
+  "DK",
+  "DT",
+  "KD",
+  "KS",
+  "KT",
+  "LG",
+  "LH",
+  "NH",
+  "OT",
+  "QT",
+  "TA",
+  "TC",
+  "TH",
+  "TM",
+  "TN",
+  "TT",
+];
+exports.crawlerCodeFaculty = crawlerCodeFaculty;
 
 const lbInfo = "#lbInfo";
 exports.lbInfo = lbInfo;

@@ -4,7 +4,7 @@ const crawlers = require("./src/crawlers");
 
 (async () => {
   /* create folder if not exists */
-  const dirName = "data";
+  const dirName = "dist";
   if (!fs.existsSync(dirName)) {
     fs.mkdirSync(dirName);
   }

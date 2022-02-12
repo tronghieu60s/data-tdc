@@ -9,46 +9,24 @@ const Elements = _interopRequireWildcard(
 
 const codeCourse = "19";
 const rearInfoAccount = "&NH=2020-2021&HK=HK02";
-const csvFilePath = `./data/K${codeCourse}-Result.csv`;
-const codeFaculty = [
-  "CD",
-  "CK",
-  "CT",
-  "DC",
-  "DD",
-  "DH",
-  "DK",
-  "DT",
-  "KD",
-  "KS",
-  "KT",
-  "LG",
-  "LH",
-  "NH",
-  "OT",
-  "QT",
-  "TA",
-  "TC",
-  "TH",
-  "TM",
-  "TN",
-  "TT",
-];
-
-let studentData = "";
+const csvFilePath = `./dist/CD${codeCourse}-Result.csv`;
 
 const main = async (browser) => {
   const page = await browser.newPage();
   await page.setViewport({ width: 1366, height: 768 });
 
+  await page.goto(Elements.crawlerUrl);
   await crawlerLogin(page, "19211TT1201");
 
   for (let i = 1; i < 6000; i += 1) {
-    for (let j = 0; j < codeFaculty.length; j += 1) {
+    const rearStudentId = ("0000" + i).slice(-4);
+    for (let j = 0; j < Elements.crawlerCodeFaculty.length; j += 1) {
       // generate student code
-      const codeStudent = `${codeCourse}211${codeFaculty[j]}${rearStudentId}`;
-      let infoAccount = await crawlerInfoAccount(page, codeStudent);
-      writeDataToCsv(studentData, csvFilePath);
+      const codeStudent = `${codeCourse}211${Elements.crawlerCodeFaculty[j]}${rearStudentId}`;
+      const infoAccount = await crawlerInfoAccount(page, codeStudent);
+      if (infoAccount) {
+        writeDataToCsv({ studentId: codeStudent, ...infoAccount }, csvFilePath);
+      }
     }
   }
 
@@ -105,6 +83,10 @@ const crawlerInfoAccount = async (page, codeStudent) => {
     await page.waitForSelector(Elements.lblPhone)
   ).evaluate((el) => el.textContent);
   studentPhone = studentPhone.trim();
+
+  if (studentName === "") {
+    return null;
+  }
 
   return { studentName, studentClass, studentPhone };
 };
