@@ -24,8 +24,11 @@ const main = async (browser) => {
       // generate student code
       const codeStudent = `${codeCourse}211${Elements.crawlerCodeFaculty[j]}${rearStudentId}`;
       const infoAccount = await crawlerInfoAccount(page, codeStudent);
+      // if student found
       if (infoAccount) {
+        console.log(codeStudent);
         writeDataToCsv({ studentId: codeStudent, ...infoAccount }, csvFilePath);
+        break;
       }
     }
   }
