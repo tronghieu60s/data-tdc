@@ -16,7 +16,7 @@ const main = async (browser) => {
   await page.setViewport({ width: 1366, height: 768 });
 
   await page.goto(Elements.crawlerUrl);
-  await crawlerLogin(page, "19211TT1201");
+  await crawlerLogin(page, "19211QT0001");
 
   for (let i = 1; i < 6000; i += 1) {
     const rearStudentId = ("0000" + i).slice(-4);
